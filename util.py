@@ -1,10 +1,9 @@
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import MinMaxScaler, StandardScaler, label_binarize, OneHotEncoder
+from sklearn.preprocessing import MinMaxScaler, StandardScaler, OneHotEncoder
 import mlrose_hiive as mlrose
 from matplotlib import pyplot as plt
-import random
 import time
 import copy
 
@@ -40,7 +39,7 @@ def fit_eval_count(fit_fun, *args, **kwargs):
     return wrap
 
 
-def data_load(file_name, classifier_col, debug=False, scalar=1, make_graphs=False, random_seed=1):
+def data_load(file_name, classifier_col, debug=False, scalar=1, random_seed=1):
     df = pd.read_csv('Data/' + str(file_name), delimiter=',')
     df.head()
     row_count = df.shape[0]  # gives number of row count

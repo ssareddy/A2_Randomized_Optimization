@@ -32,12 +32,6 @@ def run_ro_algos(algo, problem_fit, gapop=200, gamut=0.1, mimpop=200, mimpct=0.2
         # SA - Initial Temperature
         util.plot_SATemps(algo, problem_fit, max_attempts, decay, maxIter, seed, min)
 
-        # MIMIC - Population
-        util.plot_MIMpop(algo, problem_fit, max_attempts, mimpct, maxIter, seed, min)
-
-        # MIMIC - Keep Percent
-        util.plot_MIMICpct(algo, problem_fit, max_attempts, mimpop, maxIter, seed)
-
 
 if __name__ == "__main__":
     print('Continuous Peaks - SA best')

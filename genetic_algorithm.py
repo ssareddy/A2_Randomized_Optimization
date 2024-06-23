@@ -1,250 +1,90 @@
-import mlrose_hiive as mlrose
-from sklearn.metrics import roc_auc_score
 import time
 import util
 
+import mlrose_hiive as mlrose
 import pandas as pd
+from sklearn.metrics import roc_auc_score
 
 
-def NN_GA(file_name, classifier_col):
-    X_train, X_test, y_train, y_test = util.data_load(file_name, classifier_col)
-    activation = ['relu']
-    learning_rate = [5, 0.01, 0.1, 1, 2, 3, 4, 7, 10]
-    algorithim = 'genetic_alg'
-    iters = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
-    nodes = [128, 128, 128, 128]
-    population = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]
-    mutation = [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 0.1]
+def GA_gridsearch(file_name, classifier_col, save_file='results/genetic_algorithm.csv'):
+    """
+    Simulates gridsearch method for genetic algorithm
+    :param file_name: data file name
+    :param classifier_col: classifier column or y column for data
+    :param save_file: save path to save results
+    :return: None
+    """
+
+    print('Running Genetic Algorithm Training')
+
+    # Data storage
     outcomes = []
-    max_attempts = [10, 50, 100, 200, 500, 1000]
-    clips = [5, 10, 100, 1000, 10000, 100000]
+    test_index = 0
 
-    act = 'relu'
-    lr = 5
-    itera = 100
-    pop = 1500
-    mut = 0.1
-    ma = 100
-    clip = 5
-    seed = 1
+    # Test variables
+    population = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]
+    learning_rate = [1, 5, 10]
+    max_attempts = [10, 50, 100]
 
-    while 1 == 1:
+    # Constant variables
+    algorithm = 'genetic_alg'
+    nodes = [128, 128, 128, 128]
+    activation = 'relu'
+    iterations = 100
+    dec = 0.92
+    clip = 10
+    mutation = 0.1
 
-        iters_outs = {}
+    # Load dataset
+    X_train, X_test, y_train, y_test = util.data_load(file_name, classifier_col)
 
-        for iter_test in iters:
-            start = time.time()
+    for lr in learning_rate:
+        for max_attempt in max_attempts:
+            for pop in population:
+                start = time.time()
 
-            print(algorithim, act, lr, iter_test, ' ', pop, mut, ma, clip)
-            nn_model = mlrose.NeuralNetwork(hidden_nodes=nodes, activation=act, max_iters=iter_test,
-                                            algorithm=algorithim, pop_size=pop, mutation_prob=mut,
-                                            bias=True, is_classifier=True, learning_rate=lr,
-                                            early_stopping=True, clip_max=clip, max_attempts=ma,
-                                            random_state=seed, curve=True)
-            nn_model.fit(X_train, y_train)
-            train_time = time.time() - start
-            print('Train time', train_time)
+                print(f'Test: {test_index}, Learning Rate: {lr}, Max Attempts: {max_attempt}, Population: {pop}')
 
-            start = time.time()
-            y_train_pred = nn_model.predict(X_train)
-            y_train_roc = roc_auc_score(y_train, y_train_pred, multi_class="ovr", average="weighted")
-            print('y_train_roc', y_train_roc)
+                nn_model = mlrose.NeuralNetwork(hidden_nodes=nodes,
+                                                activation=activation,
+                                                max_iters=iterations,
+                                                algorithm=algorithm,
+                                                pop_size=pop,
+                                                bias=True,
+                                                is_classifier=True,
+                                                learning_rate=lr,
+                                                early_stopping=True,
+                                                clip_max=clip,
+                                                max_attempts=max_attempt,
+                                                random_state=1,
+                                                curve=True,
+                                                mutation_prob=mutation)
 
-            y_train_query_time = time.time() - start
-            print('y_train_query_time', y_train_query_time)
+                nn_model.fit(X_train, y_train)
 
-            start = time.time()
-            y_test_pred = nn_model.predict(X_test)
-            y_test_roc = roc_auc_score(y_test, y_test_pred, multi_class="ovr", average="weighted")
-            print('y_test_roc', y_test_roc)
+                y_train_pred = nn_model.predict(X_train)
+                y_train_roc = roc_auc_score(y_train, y_train_pred, multi_class="ovr", average="weighted")
 
-            y_test_query_time = time.time() - start
-            print('y_test_query_time', y_test_query_time)
-            nn_loss = nn_model.loss
-            print('loss', nn_loss)
-            outcome = {'schedule': ' ', 'activation': act, 'learning_rate': lr, 'max_iters': iter_test,
-                       'population': pop, 'mutation': mut, 'max_attempts': ma, 'clip': clip, 'y_train_roc': y_train_roc,
-                       'y_test_roc': y_test_roc, 'runtime': train_time + y_train_query_time + y_test_query_time,
-                       'Train time': train_time, 'y_train_query_time': y_train_query_time,
-                       'y_test_query_time': y_test_query_time, 'loss': nn_loss}
-            outcomes.append(outcome)
-            pd.DataFrame(outcomes).to_csv('NN-GA-iteretsets.csv', mode='a', header=False)
-            iters_outs[iter_test] = y_test_roc
+                y_test_pred = nn_model.predict(X_test)
+                y_test_roc = roc_auc_score(y_test, y_test_pred, multi_class="ovr", average="weighted")
 
-        old_val = itera
-        itera = max(iters_outs, key=iters_outs.get)
-        print('best iter', itera, 'old', old_val)
+                runtime = time.time() - start
 
-        mut_outs = {}
+                outcome = {'activation': activation,
+                           'learning_rate': lr,
+                           'max_iters': iterations,
+                           'population': pop,
+                           'mutation': mutation,
+                           'decay_rates': dec,
+                           'max_attempts': max_attempt,
+                           'clip': clip,
+                           'y_train_roc': y_train_roc,
+                           'y_test_roc': y_test_roc,
+                           'runtime': runtime,
+                           'loss': nn_model.loss}
 
-        for mut_test in mutation:
-            start = time.time()
+                print(f'Storing Test {test_index} results. Total run time: {runtime}. Model Loss: {nn_model.loss}')
+                outcomes.append(outcome)
+                test_index += 1
 
-            print(algorithim, act, lr, itera, ' ', pop, mut_test, ma, clip)
-            nn_model = mlrose.NeuralNetwork(hidden_nodes=nodes, activation=act, max_iters=itera,
-                                            algorithm=algorithim, pop_size=pop, mutation_prob=mut_test,
-                                            bias=True, is_classifier=True, learning_rate=lr,
-                                            early_stopping=True, clip_max=clip, max_attempts=ma,
-                                            random_state=seed, curve=True)
-            nn_model.fit(X_train, y_train)
-            y_train_pred = nn_model.predict(X_train)
-            y_train_roc = roc_auc_score(y_train, y_train_pred, multi_class="ovr", average="weighted")
-            print('y_train_roc', y_train_roc)
-
-            y_test_pred = nn_model.predict(X_test)
-            y_test_roc = roc_auc_score(y_test, y_test_pred, multi_class="ovr", average="weighted")
-            print('y_test_roc', y_test_roc)
-
-            runtime = time.time() - start
-            print('curr run time', time.time() - start)
-
-            outcome = {'schedule': ' ', 'activation': act, 'learning_rate': lr, 'max_iters': itera, 'population': pop,
-                       'mutation': mut_test, 'max_attempts': ma, 'clip': clip, 'y_train_roc': y_train_roc,
-                       'y_test_roc': y_test_roc, 'runtime': runtime}
-            outcomes.append(outcome)
-            pd.DataFrame(outcomes).to_csv('NN-GA.csv', mode='a', header=False)
-            mut_outs[mut_test] = y_test_roc
-
-        old_val = mut
-        mut = max(mut_outs, key=mut_outs.get)
-        print('best mut', mut, 'old', old_val)
-
-        clips_outs = {}
-
-        for clip_test in clips:
-            start = time.time()
-
-            print(algorithim, act, lr, itera, ' ', pop, mut, ma, clip_test)
-            nn_model = mlrose.NeuralNetwork(hidden_nodes=nodes, activation=act, max_iters=itera,
-                                            algorithm=algorithim, pop_size=pop, mutation_prob=mut,
-                                            bias=True, is_classifier=True, learning_rate=lr,
-                                            early_stopping=True, clip_max=clip_test, max_attempts=ma,
-                                            random_state=seed, curve=True)
-            nn_model.fit(X_train, y_train)
-            y_train_pred = nn_model.predict(X_train)
-            y_train_roc = roc_auc_score(y_train, y_train_pred, multi_class="ovr", average="weighted")
-            print('y_train_roc', y_train_roc)
-
-            y_test_pred = nn_model.predict(X_test)
-            y_test_roc = roc_auc_score(y_test, y_test_pred, multi_class="ovr", average="weighted")
-            print('y_test_roc', y_test_roc)
-
-            runtime = time.time() - start
-            print('curr run time', time.time() - start)
-
-            outcome = {'schedule': ' ', 'activation': act, 'learning_rate': lr, 'max_iters': itera, 'population': pop,
-                       'mutation': mut, 'max_attempts': ma, 'clip': clip_test, 'y_train_roc': y_train_roc,
-                       'y_test_roc': y_test_roc, 'runtime': runtime}
-            outcomes.append(outcome)
-            pd.DataFrame(outcomes).to_csv('NN-GA.csv', mode='a', header=False)
-            clips_outs[clip_test] = y_test_roc
-
-        old_val = clip
-        clip = max(clips_outs, key=clips_outs.get)
-        print('best clip', clip, 'old', old_val)
-
-        maxa_outs = {}
-
-        for maxa_test in max_attempts:
-            start = time.time()
-
-            print(algorithim, act, lr, itera, ' ', pop, mut, maxa_test, clip)
-            nn_model = mlrose.NeuralNetwork(hidden_nodes=nodes, activation=act, max_iters=itera,
-                                            algorithm=algorithim, pop_size=pop, mutation_prob=mut,
-                                            bias=True, is_classifier=True, learning_rate=lr,
-                                            early_stopping=True, clip_max=clip, max_attempts=maxa_test,
-                                            random_state=seed, curve=True)
-            nn_model.fit(X_train, y_train)
-            y_train_pred = nn_model.predict(X_train)
-            y_train_roc = roc_auc_score(y_train, y_train_pred, multi_class="ovr", average="weighted")
-            print('y_train_roc', y_train_roc)
-
-            y_test_pred = nn_model.predict(X_test)
-            y_test_roc = roc_auc_score(y_test, y_test_pred, multi_class="ovr", average="weighted")
-            print('y_test_roc', y_test_roc)
-
-            runtime = time.time() - start
-            print('curr run time', time.time() - start)
-
-            outcome = {'schedule': ' ', 'activation': act, 'learning_rate': lr, 'max_iters': itera, 'population': pop,
-                       'mutation': mut, 'max_attempts': maxa_test, 'clip': clip, 'y_train_roc': y_train_roc,
-                       'y_test_roc': y_test_roc, 'runtime': runtime}
-            outcomes.append(outcome)
-            pd.DataFrame(outcomes).to_csv('NN-GA.csv', mode='a', header=False)
-            maxa_outs[maxa_test] = y_test_roc
-
-        old_val = ma
-        ma = max(maxa_outs, key=maxa_outs.get)
-        print('best ma', ma, 'old', old_val)
-        lr_outs = {}
-
-        for lr_test in learning_rate:
-            start = time.time()
-
-            print(algorithim, act, lr_test, itera, ' ', pop, mut, ma, clip)
-            nn_model = mlrose.NeuralNetwork(hidden_nodes=nodes, activation=act, max_iters=itera,
-                                            algorithm=algorithim, pop_size=pop, mutation_prob=mut,
-                                            bias=True, is_classifier=True, learning_rate=lr_test,
-                                            early_stopping=True, clip_max=clip, max_attempts=ma,
-                                            random_state=seed, curve=True)
-            nn_model.fit(X_train, y_train)
-            y_train_pred = nn_model.predict(X_train)
-            y_train_roc = roc_auc_score(y_train, y_train_pred, multi_class="ovr", average="weighted")
-            print('y_train_roc', y_train_roc)
-
-            y_test_pred = nn_model.predict(X_test)
-            y_test_roc = roc_auc_score(y_test, y_test_pred, multi_class="ovr", average="weighted")
-            print('y_test_roc', y_test_roc)
-
-            runtime = time.time() - start
-            print('curr run time', time.time() - start)
-
-            outcome = {'schedule': ' ', 'activation': act, 'learning_rate': lr_test, 'max_iters': itera,
-                       'population': pop, 'mutation': mut, 'max_attempts': ma, 'clip': clip, 'y_train_roc': y_train_roc,
-                       'y_test_roc': y_test_roc, 'runtime': runtime}
-            outcomes.append(outcome)
-            pd.DataFrame(outcomes).to_csv('NN-GA.csv', mode='a', header=False)
-            lr_outs[lr_test] = y_test_roc
-
-        old_lr = lr
-        lr = max(lr_outs, key=lr_outs.get)
-        print('best lr', lr, 'old', old_lr)
-
-        pop_outs = {}
-
-        for pop_test in population:
-            start = time.time()
-
-            print(algorithim, act, lr, itera, ' ', pop_test, mut, ma, clip)
-            nn_model = mlrose.NeuralNetwork(hidden_nodes=nodes, activation=act, max_iters=itera,
-                                            algorithm=algorithim, pop_size=pop_test, mutation_prob=mut,
-                                            bias=True, is_classifier=True, learning_rate=lr,
-                                            early_stopping=True, clip_max=clip, max_attempts=ma,
-                                            random_state=seed, curve=True)
-            nn_model.fit(X_train, y_train)
-            y_train_pred = nn_model.predict(X_train)
-            y_train_roc = roc_auc_score(y_train, y_train_pred, multi_class="ovr", average="weighted")
-            print('y_train_roc', y_train_roc)
-
-            y_test_pred = nn_model.predict(X_test)
-            y_test_roc = roc_auc_score(y_test, y_test_pred, multi_class="ovr", average="weighted")
-            print('y_test_roc', y_test_roc)
-
-            runtime = time.time() - start
-            print('curr run time', time.time() - start)
-
-            outcome = {'schedule': ' ', 'activation': act, 'learning_rate': lr, 'max_iters': itera,
-                       'population': pop_test, 'mutation': mut, 'max_attempts': ma, 'clip': clip,
-                       'y_train_roc': y_train_roc, 'y_test_roc': y_test_roc, 'runtime': runtime}
-            outcomes.append(outcome)
-            pd.DataFrame(outcomes).to_csv('NN-GA.csv', mode='a', header=False)
-            pop_outs[pop_test] = y_test_roc
-
-        old_val = pop
-        pop = max(pop_outs, key=pop_outs.get)
-        print('best pop', pop, 'old', old_val)
-
-
-if __name__ == "__main__":
-    NN_GA(file_name='Mobile_Prices_orig.csv',
-          classifier_col='price_range')
+                pd.DataFrame(outcomes).to_csv(save_file)
