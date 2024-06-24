@@ -1,6 +1,6 @@
 Code Setup Instructions
 
-Datasets that were used, if they do not show up when cloning repo use this link to copy the dataset\n
+1. Datasets that were used, if they do not show up when cloning repo use this link to copy the dataset
   a. UK Cities Dataset: https://www.kaggle.com/datasets/patricklford/travelling-salesman-problem
 
 The python version that I used when running this code is 3.7 please use 3.7 just to avoid any issues
