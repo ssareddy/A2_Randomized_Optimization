@@ -1,5 +1,7 @@
 Code Setup Instructions
 
+Download code from github: https://github.com/ssareddy/A2_Randomized_Optimization
+
 1. Datasets that were used, if they do not show up when cloning repo use this link to copy the dataset  
    a. UK Cities Dataset: https://www.kaggle.com/datasets/patricklford/travelling-salesman-problem
 
